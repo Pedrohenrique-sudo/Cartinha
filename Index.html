@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uma Grande Surpresa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@300;400;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS RESET & BASE --- */
+        :root {
+            --bg-dark: #0a0a0c;
+            --primary: #ff2d55;
+            --gold: #d4af37;
+            --glass: rgba(255, 255, 255, 0.08);
+            --text: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-box-sizing: border-box; }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- CANVAS PARA EFEITOS --- */
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* --- NARRATIVA POR ETAPAS --- */
+        .stage {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 1s ease;
+        }
+
+        .hidden { opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(50px); position: absolute; }
+
+        /* --- ESTILO DOS ELEMENTOS --- */
+        .glass-box {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            padding: 60px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            max-width: 800px;
+            width: 90%;
+        }
+
+        h1 { font-family: 'Dancing Script', cursive; font-size: 4.5rem; color: var(--primary); margin-bottom: 20px; }
+        p { font-size: 1.2rem; line-height: 1.6; margin-bottom: 30px; letter-spacing: 1px; }
+
+        /* --- BOTÃO INTERATIVO --- */
+        .btn-main {
+            background: linear-gradient(45deg, var(--primary), #ff6b6b);
+            border: none;
+            padding: 20px 50px;
+            color: white;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-radius: 100px;
+            cursor: pointer;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 20px rgba(255, 45, 85, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-main:hover { transform: scale(1.1) translateY(-5px); box-shadow: 0 20px 40px rgba(255, 45, 85, 0.5); }
+        .btn-main:active { transform: scale(0.95); }
+
+        /* --- FLOATING ELEMENTS --- */
+        .birthday-title { font-size: 5.5rem !important; color: var(--gold) !important; text-shadow: 0 0 30px rgba(212, 175, 55, 0.5); }
+        .wife-name { font-size: 3rem; font-weight: 800; display: block; margin-top: 15px; color: #fff; }
+
+        /* --- ANIMAÇÕES --- */
+        @keyframes pulse-glow {
+            0% { text-shadow: 0 0 10px var(--primary); }
+            50% { text-shadow: 0 0 30px var(--primary), 0 0 50px #ff0000; }
+            100% { text-shadow: 0 0 10px var(--primary); }
+        }
+
+        .pulse { animation: pulse-glow 2s infinite; }
+
+        .counter-box { font-size: 3rem; font-weight: 900; color: var(--primary); margin: 20px 0; }
+
+        /* Overlay de cores */
+        .vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 40%, black 150%);
+            z-index: 5; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-bg"></canvas>
+    <div class="vignette"></div>
+
+    <div id="step1" class="stage">
+        <div class="glass-box">
+            <h1 class="pulse">Você recebeu um convite...</h1>
+            <p>HOJE E UM DIA MUITO ESPECIAL PARA MEU "CHAVEIRINHO". <br>17 aninhos</p>
+            <button class="btn-main" onclick="nextStep(2)">Revelar✨</button>
+        </div>
+    </div>
+
+    <div id="step2" class="stage hidden">
+        <div class="glass-box">
+            <h1>Sintonizando o Amor...</h1>
+            <div id="counter" class="counter-box">0%</div>
+            <p>carregando🤍</p>
+        </div>
+    </div>
+
+    <div id="step3" class="stage hidden">
+        <div class="glass-box">
+            <h1 class="birthday-title">Feliz Aniversário! 🎂</h1>
+            <p>Feliz aniversário! MARIA VITÓRIA, Que seu dia seja tão incrível quanto você e que a gente comemore muitos outros anos juntos. Parabéns por ser quem você é</p>
+            <span class="wife-name">❤️ MARIA VITÓRIA ❤️</span>
+                                <div class="photo-container"><img src="foto_1.jpg" class="gallery-img"></div>
+            <button class="btn-main" onclick="fireworksExplosion()">🥳🎂🤍🎁</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- ENGINE DE PARTÍCULAS PROFISSIONAL --- */
+        const canvas = document.getElementById('canvas-bg');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let hearts = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (Math.random() - 0.5) * 8;
+                this.speedY = (Math.random() - 0.5) * 8;
+                this.gravity = 0.05;
+                this.opacity = 1;
+                this.life = 0.95 + Math.random() * 0.04;
+            }
+            update() {
+                this.speedY += this.gravity;
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.opacity *= this.life;
+            }
+            draw() {
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Heart {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * canvas.height;
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height + 20;
+                this.size = Math.random() * 15 + 10;
+                this.speed = Math.random() * 2 + 1;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.swing = Math.random() * 3;
+            }
+            update() {
+                this.y -= this.speed;
+                this.x += Math.sin(this.y / 30) * this.swing;
+                if (this.y < -20) this.reset();
+            }
+            draw() {
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = '#ff2d55';
+                ctx.font = `${this.size}px serif`;
+                ctx.fillText('❤️', this.x, this.y);
+            }
+        }
+
+        // Inicializa corações de fundo
+        for(let i=0; i<30; i++) hearts.push(new Heart());
+
+        function nextStep(step) {
+            if(step === 2) {
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+                startCounter();
+            } else if(step === 3) {
+                document.getElementById('step2').classList.add('hidden');
+                document.getElementById('step3').classList.remove('hidden');
+                // Ativa modo festa
+                setInterval(createFirework, 800);
+            }
+        }
+
+        function startCounter() {
+            let count = 0;
+            const element = document.getElementById('counter');
+            const interval = setInterval(() => {
+                count += Math.floor(Math.random() * 10) + 1;
+                if(count >= 100) {
+                    count = 100;
+                    clearInterval(interval);
+                    setTimeout(() => nextStep(3), 500);
+                }
+                element.innerText = count + '%';
+            }, 150);
+        }
+
+        function createFirework(customX, customY) {
+            const x = customX || Math.random() * canvas.width;
+            const y = customY || Math.random() * (canvas.height / 2);
+            const color = `hsl(${Math.random() * 360}, 100%, 60%)`;
+            for(let i=0; i<50; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function fireworksExplosion() {
+            for(let i=0; i<5; i++) {
+                setTimeout(createFirework, i * 200);
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 10, 12, 0.2)'; // Efeito de rastro
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            hearts.forEach(h => { h.update(); h.draw(); });
+            
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if(p.opacity < 0.01) particles.splice(index, 1);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Interação de clique global para gerar partículas
+        window.addEventListener('mousedown', (e) => {
+            if(document.getElementById('step3').classList.contains('hidden')) return;
+            const color = '#ff2d55';
+            for(let i=0; i<15; i++) particles.push(new Particle(e.clientX, e.clientY, color));
+        });
+
+    </script>
+</body>
+</html>
